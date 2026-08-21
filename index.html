@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Prospection Artisans Reims</title>
+<style>
+  :root {
+    --navy: #1C2B4A; --red: #A8402F; --green: #3D6B4A; --amber: #B8863B;
+    --paper: #EFEAE0; --ink: #241F1B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Georgia, 'Iowan Old Style', serif;
+    background: var(--paper); color: var(--ink);
+  }
+  .mono { font-family: 'Courier New', Courier, monospace; }
+  header {
+    position: sticky; top: 0; z-index: 10; background: var(--paper);
+    border-bottom: 3px double var(--ink); padding: 16px 16px 12px;
+  }
+  .eyebrow { font-size: 10.5px; letter-spacing: 0.1em; color: #24181399; }
+  h1 { font-size: 19px; margin: 2px 0 10px; }
+  .counts { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .count-chip { font-size: 10.5px; border-radius: 3px; padding: 3px 7px; border: 1px solid; }
+  input[type=text], select {
+    font-family: Georgia, serif; background: #fff; border: 1px solid #24181344;
+    border-radius: 4px; padding: 7px 9px; font-size: 13px; color: var(--ink);
+  }
+  .search-wrap { position: relative; margin-bottom: 8px; }
+  .search-wrap input { width: 100%; padding-left: 30px; }
+  .search-icon { position: absolute; left: 9px; top: 9px; color: #24181388; font-size: 13px; }
+  .filters { display: flex; gap: 8px; }
+  .filters select { flex: 1; }
+  main { padding: 12px 16px 100px; }
+  .result-count { font-size: 12px; color: #24181388; margin-bottom: 10px; }
+  .list { display: grid; gap: 10px; }
+  .card {
+    background: #fff; border: 1px solid #24181322; border-radius: 4px; padding: 12px;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.04);
+  }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .card-name { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .card-metier { font-family: 'Courier New', monospace; font-size: 10.5px; color: var(--navy); margin-top: 2px; }
+  .card-addr { font-size: 12px; color: #24181399; margin-top: 4px; }
+  .status-chip { font-family: 'Courier New', monospace; font-size: 9.5px; border-radius: 3px; padding: 3px 6px; white-space: nowrap; border: 1px solid; }
+  .card-actions { display: flex; gap: 6px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+  .call-btn {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--navy); color: #fff;
+    text-decoration: none; padding: 9px 14px; border-radius: 4px; font-size: 13px; font-weight: 700;
+    font-family: 'Courier New', monospace; letter-spacing: 0.03em;
+  }
+  .status-btn {
+    font-family: 'Courier New', monospace; font-size: 10.5px; padding: 5px 8px; border-radius: 3px;
+    font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .reset-footer {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--paper);
+    border-top: 2px solid #24181333; padding: 8px 16px; text-align: center;
+  }
+  .reset-footer button {
+    background: none; border: none; color: #24181377; font-size: 10.5px;
+    text-decoration: underline; padding: 4px; cursor: pointer; font-family: 'Courier New', monospace;
+  }
+  .no-tel { font-family: 'Courier New', monospace; font-size: 12px; color: #24181366; font-style: italic; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">PROSPECTION — ARTISANS REIMS</div>
+  <h1 id="title">Liste d'appels</h1>
+  <div class="counts" id="counts"></div>
+  <div class="search-wrap">
+    <span class="search-icon">&#128269;</span>
+    <input type="text" id="search" placeholder="Rechercher un nom ou une ville...">
+  </div>
+  <div class="filters">
+    <select id="filterMetier"></select>
+    <select id="filterStatus">
+      <option value="Tous">Tous statuts</option>
+      <option value="a_appeler">À appeler</option>
+      <option value="pas_repondu">Pas répondu</option>
+      <option value="rdv">RDV pris</option>
+      <option value="refuse">Refusé</option>
+    </select>
+  </div>
+</header>
+
+<main>
+  <div class="result-count" id="resultCount"></div>
+  <div class="list" id="list"></div>
+</main>
+
+<div class="reset-footer">
+  <button onclick="resetAll()">Réinitialiser tous les statuts</button>
+</div>
+
+<script>
+const PROSPECTS = [{"id": "p1", "nom": "REIMS PLOMBERIE Eurl Dumont Laurent", "metier": "Plombier", "tel": "+33 6 28 94 73 42", "adresse": "64 Rue Maldan, 51100 Reims", "ville": "Reims"}, {"id": "p2", "nom": "Plomberie Moronval Reims", "metier": "Plombier", "tel": "+33 6 14 96 26 25", "adresse": "19 Rue Linguet, 51100 Reims", "ville": "Reims"}, {"id": "p3", "nom": "Bicycl'eau Reims", "metier": "Plombier", "tel": "+33 6 68 54 32 70", "adresse": "12 Rue Heidsieck, 51100 Reims", "ville": "Reims"}, {"id": "p4", "nom": "LAK plomberie Reims", "metier": "Plombier", "tel": "+33 6 34 45 19 16", "adresse": "77 Rue Émile Zola, 51100 Reims", "ville": "Reims"}, {"id": "p5", "nom": "A.B PLOMBERIE CHAUFFAGE REIMS", "metier": "Plombier/Chauffagiste", "tel": "+33 6 25 87 33 15", "adresse": "45 Rue Narcisse Brunette, 51100 Reims", "ville": "Reims"}, {"id": "p6", "nom": "RMS DEPANNAGE", "metier": "Plombier", "tel": "+33 3 26 08 65 06", "adresse": "3 Rue Daniel Berger-Neuvillette, 51100 Reims", "ville": "Reims"}, {"id": "p7", "nom": "Artema Chauffage Plomberie", "metier": "Plombier/Chauffagiste", "tel": "+33 6 43 76 08 03", "adresse": "38 Rue Ledru Rollin, 51100 Reims", "ville": "Reims"}, {"id": "p8", "nom": "Plombier Reims - AJ Plomberie", "metier": "Plombier", "tel": "+33 6 31 88 11 58", "adresse": "30 All. de l'Aude, 51100 Reims", "ville": "Reims"}, {"id": "p9", "nom": "sacré plombier", "metier": "Plombier", "tel": "+33 6 03 07 33 07", "adresse": "9 Rue Hincmar, 51100 Reims", "ville": "Reims"}, {"id": "p10", "nom": "Electricien reims rapide", "metier": "Électricien", "tel": "+33 3 52 74 51 40", "adresse": "12 Rue Jean-Jacques Rousseau, 51100 Reims", "ville": "Reims"}, {"id": "p11", "nom": "Redouane Élec", "metier": "Électricien", "tel": "+33 7 60 19 29 10", "adresse": "6B Rue Fanart, 51100 Reims", "ville": "Reims"}, {"id": "p12", "nom": "JCT ELECT", "metier": "Électricien", "tel": "+33 6 63 01 49 48", "adresse": "81 Rue de Courlancy, 51100 Reims", "ville": "Reims"}, {"id": "p13", "nom": "Alex'électricité", "metier": "Électricien", "tel": "+33 7 82 49 13 95", "adresse": "11 Chem. des Charbonniers, 51100 Reims", "ville": "Reims"}, {"id": "p14", "nom": "SINCEL", "metier": "Électricien", "tel": "+33 7 66 75 91 84", "adresse": "77 Rue de la Maison Blanche, 51100 Reims", "ville": "Reims"}, {"id": "p15", "nom": "2IP", "metier": "Plombier", "tel": "+33 6 20 59 64 77", "adresse": "7 bis Pl. Georges Méliès, 51100 Reims", "ville": "Reims"}, {"id": "p16", "nom": "Aztec Rénovation", "metier": "Électricien", "tel": "+33 7 82 80 18 21", "adresse": "121 Rue de Courlancy, 51100 Reims", "ville": "Reims"}, {"id": "p17", "nom": "ELC REIMS Électricien Reims 51", "metier": "Électricien", "tel": "+33 3 52 74 53 12", "adresse": "14 Rue du Petit Four B, 51100 Reims", "ville": "Reims"}, {"id": "p18", "nom": "Bnelec", "metier": "Électricien", "tel": "+33 6 51 42 76 37", "adresse": "12 Pl. des Argonautes, 51100 Reims", "ville": "Reims"}, {"id": "p19", "nom": "Eclairenov", "metier": "Électricien", "tel": "+33 6 22 59 07 69", "adresse": "3 ter Rue de Kairouan, 51100 Reims", "ville": "Reims"}, {"id": "p20", "nom": "A.GOSSET Peintre D'intérieur", "metier": "Peintre", "tel": "+33 6 37 18 09 43", "adresse": "8 Rue Gabriel Voisin, 51100 Reims", "ville": "Reims"}, {"id": "p21", "nom": "Les Compagnons Peintres Champenois", "metier": "Peintre", "tel": "+33 3 26 83 88 40", "adresse": "7 Rue Denis Papin, 51100 Reims", "ville": "Reims"}, {"id": "p22", "nom": "TBR Peinture", "metier": "Peintre", "tel": "+33 6 59 98 84 63", "adresse": "19 Rue Marcel Falala, 51100 Reims", "ville": "Reims"}, {"id": "p23", "nom": "Renovation Peinture Service RPS", "metier": "Peintre", "tel": "+33 6 09 23 24 99", "adresse": "3 Rue Général Micheler, 51100 Reims", "ville": "Reims"}, {"id": "p24", "nom": "Peintre Reims S.k peinture rénovation Rémoise", "metier": "Peintre", "tel": "+33 6 24 55 02 98", "adresse": "1 Chem. des Pensionnés, 51100 Reims", "ville": "Reims"}, {"id": "p25", "nom": "Jaloux Habitat Evolution", "metier": "Peintre", "tel": "+33 3 26 85 48 32", "adresse": "85 Rue du Barbâtre, 51100 Reims", "ville": "Reims"}, {"id": "p26", "nom": "EP PEINTURE", "metier": "Peintre", "tel": "+33 6 18 11 61 66", "adresse": "171 Av. Jean Jaurès, 51100 Reims", "ville": "Reims"}, {"id": "p27", "nom": "TP.peinture", "metier": "Peintre", "tel": "+33 6 36 41 58 29", "adresse": "20 Rue de Fismes, 51100 Reims", "ville": "Reims"}, {"id": "p28", "nom": "JZ peinture et ravalement", "metier": "Peintre", "tel": "+33 6 77 83 67 55", "adresse": "32 Bd de la Paix, 51100 Reims", "ville": "Reims"}, {"id": "p29", "nom": "Meunier Artisan", "metier": "Peintre", "tel": "+33 7 80 04 94 39", "adresse": "62 Bd Robespierre, 51100 Reims", "ville": "Reims"}, {"id": "p30", "nom": "EM ENERGIE - Chauffagiste Reims", "metier": "Chauffagiste", "tel": "+33 3 26 05 15 10", "adresse": "82 Av. Georges Clemenceau, 51100 Reims", "ville": "Reims"}, {"id": "p31", "nom": "Patinet Climatisation Chauffage", "metier": "Chauffagiste", "tel": "+33 3 26 36 36 56", "adresse": "14 Rue Alexis de Tocqueville, 51100 Reims", "ville": "Reims"}, {"id": "p32", "nom": "Sf Service Plombier Chauffagiste", "metier": "Plombier/Chauffagiste", "tel": "+33 6 66 10 77 36", "adresse": "9 Esp. Gustave Courbet, 51100 Reims", "ville": "Reims"}, {"id": "p33", "nom": "Le Parfait Chauffagiste", "metier": "Chauffagiste", "tel": "+33 6 85 11 27 08", "adresse": "8 All. Paul Halary, 51100 Reims", "ville": "Reims"}, {"id": "p34", "nom": "Ac dépannage chauffage", "metier": "Chauffagiste", "tel": "+33 6 32 90 13 70", "adresse": "31 Rue du Chanoine Lallement, 51100 Reims", "ville": "Reims"}, {"id": "p35", "nom": "SAS PERESSE Chauffagiste Reims 51", "metier": "Chauffagiste", "tel": "+33 3 26 47 54 80", "adresse": "8 Rue Marie Louise Burgert, 51100 Reims", "ville": "Reims"}, {"id": "p36", "nom": "PCPX", "metier": "Plombier", "tel": "+33 7 69 89 53 95", "adresse": "Allée Roger Noisiez, 51430 Tinqueux", "ville": "Tinqueux"}, {"id": "p37", "nom": "MSF Bornes", "metier": "Électricien", "tel": "+33 6 68 05 22 50", "adresse": "21 bis Rue des Compagnons, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p38", "nom": "ADB Elec", "metier": "Électricien", "tel": "+33 6 30 07 02 40", "adresse": "3 Imp. Claude Burgod, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p39", "nom": "SEBELEC", "metier": "Électricien", "tel": "+33 6 20 99 20 50", "adresse": "35 Rue des Blancs Monts, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p40", "nom": "BARRET PASCAL", "metier": "Électricien", "tel": "+33 6 76 19 74 04", "adresse": "20 Rue de Champagne Ardennes, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p41", "nom": "Seelec Sarl", "metier": "Électricien", "tel": "+33 3 26 82 38 88", "adresse": "4 Rue de l'Industrie, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p42", "nom": "Thomas Réseaux Électriques", "metier": "Électricien", "tel": "+33 6 23 98 83 57", "adresse": "36 Rte de Taissy, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p43", "nom": "Maurice MARCHAND", "metier": "Peintre", "tel": "+33 3 26 07 02 50", "adresse": "3 Grande Rue, 51450 Béthany", "ville": "Béthany"}, {"id": "p44", "nom": "Prestige Deco Peinture", "metier": "Peintre", "tel": "+33 6 26 28 02 28", "adresse": "9 Imp. Max Planck, 51450 Béthany", "ville": "Béthany"}, {"id": "p45", "nom": "Michael Despicq", "metier": "Peintre", "tel": "+33 6 11 40 24 71", "adresse": "16 Rue de Béthany, 51100 Reims", "ville": "Reims"}, {"id": "p46", "nom": "sarl CHAMEROY", "metier": "Plombier/Chauffagiste", "tel": "+33 3 26 97 21 84", "adresse": "13 bis Rue du Moulin Florent, 51420 Witry-lès-Reims", "ville": "Witry-lès-Reims"}, {"id": "p47", "nom": "Vincent Brochet", "metier": "Chauffagiste", "tel": "+33 3 26 97 24 77", "adresse": "Rue du Poisson Vert, 51420 Witry-lès-Reims", "ville": "Witry-lès-Reims"}, {"id": "p48", "nom": "Star Management", "metier": "Plombier", "tel": "+33 7 49 11 45 86", "adresse": "51100 Reims", "ville": "Reims"}, {"id": "p49", "nom": "Sarl Plomberie Champenoise", "metier": "Plombier", "tel": "+33 3 26 55 55 56", "adresse": "33 Av. de la Malle, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p50", "nom": "Legouge Vincent", "metier": "Plombier", "tel": "+33 6 11 11 18 05", "adresse": "5 Rue du Chanoine Lallement, 51100 Reims", "ville": "Reims"}, {"id": "p51", "nom": "La Maison Du Chauffage", "metier": "Chauffagiste", "tel": "+33 9 83 07 86 87", "adresse": "9 Rue du Loup, 51420 Cernay-lès-Reims", "ville": "Cernay-lès-Reims"}, {"id": "p52", "nom": "SAS CLAIR'EQUEAUX", "metier": "Chauffagiste", "tel": "+33 3 26 78 06 03", "adresse": "4 Rue André François J Rieg, 51100 Reims", "ville": "Reims"}, {"id": "p53", "nom": "A.I.R.E Automatismes Industriels", "metier": "Électricien", "tel": "+33 3 26 87 58 51", "adresse": "6 Rue Pierre Marie Curie, 51500 Taissy", "ville": "Taissy"}, {"id": "p54", "nom": "Groupe Mallet (Siège Reims)", "metier": "Électricien/Peintre", "tel": "+33 3 26 49 77 77", "adresse": "3 Rue des Terres, 51420 Cernay-lès-Reims", "ville": "Cernay-lès-Reims"}, {"id": "p55", "nom": "Pradet toiture peinture", "metier": "Peintre", "tel": "+33 6 73 92 31 94", "adresse": "Chem. des Marais, 51430 Tinqueux", "ville": "Tinqueux"}, {"id": "p56", "nom": "renovsb51", "metier": "Peintre", "tel": "+33 6 61 13 77 01", "adresse": "1 Rue Albert Collet, 51430 Tinqueux", "ville": "Tinqueux"}, {"id": "p57", "nom": "BG Deco", "metier": "Peintre", "tel": "+33 6 65 38 37 12", "adresse": "28 All. des Tamaris, 51430 Tinqueux", "ville": "Tinqueux"}, {"id": "p58", "nom": "Dupont Collet Ludovic", "metier": "Peintre", "tel": "+33 3 26 84 13 32", "adresse": "23 All. Gabrielle Dorziat, 51430 Tinqueux", "ville": "Tinqueux"}, {"id": "p59", "nom": "Etablissements LAGARDE", "metier": "Peintre", "tel": "+33 3 26 97 13 06", "adresse": "17 Rue des Frères Glorieux, 51430 Tinqueux", "ville": "Tinqueux"}, {"id": "p60", "nom": "Mgb peinture", "metier": "Peintre", "tel": "+33 6 48 80 25 65", "adresse": "15 bis Rue Curie, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p61", "nom": "A.J Peinture", "metier": "Peintre", "tel": "+33 6 89 67 15 78", "adresse": "13 Rue Boris Vian, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p62", "nom": "CHAUFFAGE PAC 51", "metier": "Chauffagiste", "tel": "+33 6 71 74 04 21", "adresse": "1 Rue du Commerce, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p63", "nom": "Sarl adics et enr", "metier": "Plombier/Électricien", "tel": "+33 3 26 36 54 94", "adresse": "8 Rue Lucien Léger, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p64", "nom": "Al Climatisation", "metier": "Chauffagiste", "tel": "+33 3 68 38 22 02", "adresse": "1 Rue du Commerce, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p65", "nom": "Nobis 51", "metier": "Chauffagiste", "tel": "+33 3 26 91 06 09", "adresse": "37 Rue des Blancs Monts, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p66", "nom": "Crabs SARL", "metier": "Plombier", "tel": "+33 3 26 84 92 83", "adresse": "25 Rue des Compagnons, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p67", "nom": "Reims Climatisation", "metier": "Chauffagiste", "tel": "+33 6 46 44 54 97", "adresse": "52 Rue de Bretagne, 51350 Cormontreuil", "ville": "Cormontreuil"}, {"id": "p68", "nom": "Cardon Cyril", "metier": "Chauffagiste", "tel": "+33 6 23 15 57 44", "adresse": "07 Rue Ludmila Tcherina, 51450 Béthany", "ville": "Béthany"}, {"id": "p69", "nom": "Fort Intervention", "metier": "Plombier", "tel": "+33 3 26 97 00 86", "adresse": "26 Rue Lecointre, 51100 Reims", "ville": "Reims"}, {"id": "p70", "nom": "Sarl WITRY-ELEC", "metier": "Électricien", "tel": "+33 3 26 97 21 47", "adresse": "16 Rue de Bethany, 51420 Witry-lès-Reims", "ville": "Witry-lès-Reims"}, {"id": "p71", "nom": "Cs Elec", "metier": "Électricien", "tel": "+33 6 01 01 46 12", "adresse": "5 Rue de la Crayère, 51420 Cernay-lès-Reims", "ville": "Cernay-lès-Reims"}, {"id": "p72", "nom": "S.E.R ELECTRICITE CLOISON", "metier": "Électricien", "tel": "+33 3 26 84 45 60", "adresse": "10 Rue Rayet-Liénart, 51420 Witry-lès-Reims", "ville": "Witry-lès-Reims"}, {"id": "p73", "nom": "Eurl COUSIN NICOLAS ELECTRICITE", "metier": "Électricien", "tel": "+33 6 15 76 15 26", "adresse": "51110 Isles-sur-Suippe", "ville": "Isles-sur-Suippe"}, {"id": "p74", "nom": "BOUTIN Décoration", "metier": "Peintre", "tel": "+33 3 26 07 16 92", "adresse": "5 Rue des Terres, 51420 Cernay-lès-Reims", "ville": "Cernay-lès-Reims"}, {"id": "p75", "nom": "PETITJEAN PEINTURE", "metier": "Peintre", "tel": "+33 3 26 82 98 97", "adresse": "6 Rue des Didris, 51420 Cernay-lès-Reims", "ville": "Cernay-lès-Reims"}, {"id": "p76", "nom": "Kadana peinture", "metier": "Peintre", "tel": "+33 7 69 09 88 90", "adresse": "54 Rue Hannah Arendt, 51100 Reims", "ville": "Reims"}, {"id": "p77", "nom": "SARL J ET C FLEURY", "metier": "Plombier/Chauffagiste", "tel": "+33 6 64 64 37 59", "adresse": "6 Rue des Cévennes, 51500 Taissy", "ville": "Taissy"}, {"id": "p78", "nom": "SANACC", "metier": "Chauffagiste", "tel": "+33 3 26 04 85 22", "adresse": "4 bis Av. des Coïdes, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p79", "nom": "Equinoxe Reims", "metier": "Chauffagiste", "tel": "+33 3 26 50 64 64", "adresse": "18 Av. des Coïdes, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p80", "nom": "Blanchard Electricité", "metier": "Électricien", "tel": "+33 3 26 84 49 21", "adresse": "20 Av. des Coïdes, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p81", "nom": "DTR Plomberie", "metier": "Plombier", "tel": "+33 6 98 62 12 13", "adresse": "13 Chem. du Maire, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p82", "nom": "Anquetil Climatisation", "metier": "Chauffagiste", "tel": "+33 3 26 09 02 51", "adresse": "9 Chem. de Saint-Thierry, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p83", "nom": "FLODIFROID", "metier": "Chauffagiste", "tel": "+33 3 26 82 43 54", "adresse": "15 Av. de la Malle, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p84", "nom": "Bmj", "metier": "Peintre", "tel": "+33 3 26 87 42 38", "adresse": "4 Rue du Château Sénart, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p85", "nom": "Valissant Frederic", "metier": "Peintre", "tel": "+33 3 26 88 02 44", "adresse": "14 Av. des Chenevières, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p86", "nom": "Suisse peinture", "metier": "Peintre", "tel": "+33 3 26 08 20 37", "adresse": "2 Av. des Coïdes, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p87", "nom": "Agence Dépannage Ballooneo Reims", "metier": "Plombier", "tel": "+33 6 64 79 37 38", "adresse": "17 Rdpt de l'Europe, 51430 Bezannes", "ville": "Bezannes"}, {"id": "p88", "nom": "Sas feru plomberie", "metier": "Plombier", "tel": "+33 3 26 06 32 77", "adresse": "12 Rue de Sacy, 51430 Bezannes", "ville": "Bezannes"}, {"id": "p89", "nom": "Upkay Chauffage", "metier": "Chauffagiste", "tel": "", "adresse": "Centre d'affaires, 7 Rue Pierre Salmon, 51430 Bezannes", "ville": "Bezannes"}, {"id": "p90", "nom": "HB-entreprise", "metier": "Électricien", "tel": "+33 9 72 31 27 09", "adresse": "56 Rue Galilée, 51100 Reims", "ville": "Reims"}, {"id": "p91", "nom": "FASSI ELECTRICITE", "metier": "Électricien", "tel": "+33 7 68 53 91 91", "adresse": "16A Rue Yvon et Claire Morandat, 51100 Reims", "ville": "Reims"}, {"id": "p92", "nom": "SARL Brusadelli - Électricien", "metier": "Électricien", "tel": "+33 3 26 36 90 50", "adresse": "2 Rue Fortel, 51100 Reims", "ville": "Reims"}, {"id": "p93", "nom": "Champenoise dépannage rénovation", "metier": "Plombier", "tel": "", "adresse": "62 bis Rue Géruzez, 51100 Reims", "ville": "Reims"}, {"id": "p94", "nom": "Les Compagnons Dépanneurs Reims", "metier": "Plombier", "tel": "+33 3 26 49 41 42", "adresse": "49 Rue des Gobelins, 51100 Reims", "ville": "Reims"}, {"id": "p95", "nom": "IRH", "metier": "Chauffagiste", "tel": "+33 7 49 70 19 69", "adresse": "85 Av. de Reims, 51420 Witry-lès-Reims", "ville": "Witry-lès-Reims"}, {"id": "p96", "nom": "Art Façade 51", "metier": "Peintre", "tel": "+33 3 26 48 99 28", "adresse": "59 Rue de la Gare, 51140 Muizon", "ville": "Muizon"}, {"id": "p97", "nom": "SH ELEC RENOV", "metier": "Électricien", "tel": "+33 7 65 88 10 66", "adresse": "13-15 Chem. du Maire, 51370 Saint-Brice-Courcelles", "ville": "Saint-Brice-Courcelles"}, {"id": "p98", "nom": "Fg service", "metier": "Électricien/Plombier", "tel": "+33 6 58 24 57 78", "adresse": "9 Rue Joseph Cugnot, 51430 Tinqueux", "ville": "Tinqueux"}, {"id": "p99", "nom": "Mario Berger 51 Rénovation", "metier": "Peintre", "tel": "+33 7 80 30 66 11", "adresse": "2 Rue Gilbert, 51100 Reims", "ville": "Reims"}, {"id": "p100", "nom": "E.D électricité", "metier": "Électricien", "tel": "+33 6 15 34 30 94", "adresse": "9 Rue Saint-Maur des Fossés, 51490 Saint-Masmes", "ville": "Saint-Masmes"}, {"id": "p101", "nom": "Senelec Sécurité", "metier": "Électricien", "tel": "+33 6 18 88 77 66", "adresse": "2 rue de la Fosse Chenevrière, 51390 Gueux", "ville": "Gueux"}, {"id": "p102", "nom": "SAS Reims Champagne Electricite", "metier": "Électricien", "tel": "+33 3 26 97 19 09", "adresse": "5bis Rue Saint-Martin, 51110 Bourgogne-Fresne", "ville": "Bourgogne-Fresne"}, {"id": "p103", "nom": "Bourguignon Karl", "metier": "Peintre", "tel": "+33 9 64 41 10 86", "adresse": "16 Rue du Voisin, 51500 Villers-Allerand", "ville": "Villers-Allerand"}, {"id": "p104", "nom": "Eurl Tabary Dominique", "metier": "Peintre", "tel": "+33 6 07 71 21 74", "adresse": "5 Rue des Écoles, 51500 Rilly-la-Montagne", "ville": "Rilly-la-Montagne"}, {"id": "p105", "nom": "Monsieur Chauffe Eau Reims", "metier": "Plombier", "tel": "+33 3 10 00 87 48", "adresse": "44 All. du Veau d'Or, 51500 Sillery", "ville": "Sillery"}, {"id": "p106", "nom": "Romain Geny", "metier": "Plombier", "tel": "+33 6 98 41 18 23", "adresse": "4 Rue du Parc, 51500 Sillery", "ville": "Sillery"}, {"id": "p107", "nom": "Electri'City Aqua'City", "metier": "Électricien/Plombier", "tel": "+33 6 58 78 91 40", "adresse": "44 All. du Veau d'Or, 51500 Sillery", "ville": "Sillery"}, {"id": "p108", "nom": "DVN Concept - Reims", "metier": "Peintre", "tel": "+33 3 74 47 30 99", "adresse": "7 Rue des Sablons, 51390 Gueux", "ville": "Gueux"}, {"id": "p109", "nom": "Rénovations Plomberie Lempereur", "metier": "Plombier", "tel": "+33 3 26 53 95 93", "adresse": "5 Rue des Templiers, 51150 Ambonnay", "ville": "Ambonnay"}, {"id": "p110", "nom": "Hutasse Olivier Sarl", "metier": "Plombier", "tel": "+33 3 26 49 68 54", "adresse": "05 Rue Gambetta, 51500 Mailly-Champagne", "ville": "Mailly-Champagne"}, {"id": "p111", "nom": "Gtelec51", "metier": "Électricien", "tel": "+33 7 85 63 59 39", "adresse": "10 Rue du Point du Jour, 51380 Verzy", "ville": "Verzy"}, {"id": "p112", "nom": "AFCP", "metier": "Chauffagiste", "tel": "+33 3 26 61 94 64", "adresse": "8 Rue des Cumines, 51390 Vrigny", "ville": "Vrigny"}, {"id": "p113", "nom": "MS AMENOV - Reims", "metier": "Plombier/Électricien/Peintre", "tel": "+33 6 99 47 26 76", "adresse": "1 Av. des bornes cellule C, 51390 Gueux", "ville": "Gueux"}, {"id": "p114", "nom": "AB Sanilec 51", "metier": "Plombier", "tel": "+33 3 26 08 72 75", "adresse": "15 Rue des Marais, 51140 Montigny-sur-Vesle", "ville": "Montigny-sur-Vesle"}, {"id": "p115", "nom": "E.U.R.L LOTH ELECTRICITE", "metier": "Électricien", "tel": "+33 6 81 37 57 25", "adresse": "39 Rue Joseph Misiak, 51170 Fismes", "ville": "Fismes"}, {"id": "p116", "nom": "E.g.f.p.v", "metier": "Électricien", "tel": "+33 3 26 48 00 29", "adresse": "10 Rue Eugène Gobert, 51170 Fismes", "ville": "Fismes"}, {"id": "p117", "nom": "Kms Electricite", "metier": "Électricien", "tel": "+33 6 84 51 33 66", "adresse": "3 Rue Jeanne Dezothez, 51170 Fismes", "ville": "Fismes"}, {"id": "p118", "nom": "JS PEINTURE 51", "metier": "Peintre", "tel": "+33 6 45 26 38 50", "adresse": "60 Rue Haute, 51170 Crugny", "ville": "Crugny"}, {"id": "p119", "nom": "Caffiers Didier", "metier": "Peintre", "tel": "+33 6 45 10 67 96", "adresse": "51 Rue du Dr Schweitzer, 51170 Fismes", "ville": "Fismes"}, {"id": "p120", "nom": "Hutasse Père et Fils SARL", "metier": "Plombier", "tel": "+33 3 26 57 02 09", "adresse": "5 Rue Victor Hugo, 51150 Bouzy", "ville": "Bouzy"}];
+
+const STATUSES = {
+  a_appeler:   { label: "À appeler",   color: "#8a8378", bg: "#ffffff" },
+  pas_repondu: { label: "Pas répondu", color: "#B8863B", bg: "#FBF2E3" },
+  rdv:         { label: "RDV pris",    color: "#3D6B4A", bg: "#EAF2EC" },
+  refuse:      { label: "Refusé",      color: "#A8402F", bg: "#F7EBE9" },
+};
+
+let statusMap = JSON.parse(localStorage.getItem("call-status-map") || "{}");
+let filterMetier = "Tous";
+let filterStatus = "Tous";
+let search = "";
+
+function persist() {
+  localStorage.setItem("call-status-map", JSON.stringify(statusMap));
+}
+
+function setStatus(id, key) {
+  statusMap[id] = key;
+  persist();
+  render();
+}
+
+function resetAll() {
+  if (confirm("Réinitialiser tous les statuts d'appel ?")) {
+    statusMap = {};
+    persist();
+    render();
+  }
+}
+
+function initFilters() {
+  const metiers = ["Tous", ...new Set(PROSPECTS.map(p => p.metier))];
+  const sel = document.getElementById("filterMetier");
+  sel.innerHTML = metiers.map(m => `<option value="${m}">${m}</option>`).join("");
+  sel.addEventListener("change", e => { filterMetier = e.target.value; render(); });
+  document.getElementById("filterStatus").addEventListener("change", e => { filterStatus = e.target.value; render(); });
+  document.getElementById("search").addEventListener("input", e => { search = e.target.value; render(); });
+}
+
+function render() {
+  const counts = { a_appeler: 0, pas_repondu: 0, rdv: 0, refuse: 0 };
+  PROSPECTS.forEach(p => {
+    const st = statusMap[p.id] || "a_appeler";
+    counts[st] = (counts[st] || 0) + 1;
+  });
+  document.getElementById("counts").innerHTML = Object.entries(STATUSES).map(([key, s]) =>
+    `<div class="count-chip" style="background:${s.bg};color:${s.color};border-color:${s.color}55">${s.label}: ${counts[key] || 0}</div>`
+  ).join("");
+
+  const filtered = PROSPECTS.filter(p => {
+    if (filterMetier !== "Tous" && p.metier !== filterMetier) return false;
+    const st = statusMap[p.id] || "a_appeler";
+    if (filterStatus !== "Tous" && st !== filterStatus) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      if (!p.nom.toLowerCase().includes(s) && !p.ville.toLowerCase().includes(s)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById("resultCount").textContent = `${filtered.length} prospect${filtered.length > 1 ? "s" : ""}`;
+
+  const list = document.getElementById("list");
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:30px;color:#24181366;font-style:italic;">Aucun prospect ne correspond à ces filtres.</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(p => {
+    const st = statusMap[p.id] || "a_appeler";
+    const info = STATUSES[st];
+    const telHref = p.tel ? `tel:${p.tel.replace(/\s/g, "")}` : null;
+    return `
+      <div class="card">
+        <div class="card-top">
+          <div style="flex:1;min-width:0;">
+            <div class="card-name">${p.nom}</div>
+            <div class="card-metier">${p.metier}</div>
+            <div class="card-addr">&#128205; ${p.adresse}</div>
+          </div>
+          <span class="status-chip" style="background:${info.bg};color:${info.color};border-color:${info.color}55">${info.label}</span>
+        </div>
+        <div class="card-actions">
+          ${telHref ? `<a class="call-btn" href="${telHref}">&#128222; ${p.tel}</a>` : `<span class="no-tel">Pas de numéro</span>`}
+          <button class="status-btn" style="background:#B8863B22;color:#B8863B" onclick="setStatus('${p.id}','pas_repondu')">Pas répondu</button>
+          <button class="status-btn" style="background:#3D6B4A22;color:#3D6B4A" onclick="setStatus('${p.id}','rdv')">RDV</button>
+          <button class="status-btn" style="background:#A8402F22;color:#A8402F" onclick="setStatus('${p.id}','refuse')">Refusé</button>
+          ${st !== "a_appeler" ? `<button class="status-btn" style="background:none;color:#24181388;border:1px solid #24181333" onclick="setStatus('${p.id}','a_appeler')">Réinit.</button>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+initFilters();
+render();
+</script>
+</body>
+</html>
